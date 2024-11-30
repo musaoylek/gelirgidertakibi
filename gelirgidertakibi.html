@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelir Gider Programı</title>
+    <style>
+    body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+}
+
+.form-group {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+input, select {
+    padding: 10px;
+    margin-right: 10px;
+    flex: 1;
+}
+
+button {
+    padding: 10px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+.summary {
+    margin-top: 20px;
+    padding: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+}
+
+#transactions {
+    margin-top: 20px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#transactions div {
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+}
+
+#transactions div:last-child {
+    border-bottom: none;
+}
+
+</style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>GELİR GİDER TAKİBİ (DT KARİYER)</h1>
+        <div class="form-group">
+            <input type="text" id="description" placeholder="AÇIKLAMA">
+            <input type="number" id="amount" placeholder="TUTAR">
+            <select id="type">
+                <option value="income">GELİR</option>
+                <option value="expense">GİDER</option>
+            </select>
+            <button id="addButton">EKLE</button>
+        </div>
+        <div id="transactions"></div>
+        <div class="summary">
+            <h2>ÖZET</h2>
+            <p>TOPLAM GELİR: <span id="totalIncome">0</span> TL</p>
+            <p>TOPLAM GİDER: <span id="totalExpense">0</span> TL</p>
+            <p>NET TOPLAM: <span id="netTotal">0</span> TL</p>
+        </div>
+        <button id="downloadButton">PDF İNDİR</button>
+    </div>
+    <script>
+    let transactionsList = [];
+
+document.getElementById('addButton').addEventListener('click', function() {
+    const description = document.getElementById('description').value;
+    const amount = parseFloat(document.getElementById('amount').value);
+    const type = document.getElementById('type').value;
+
+    if (description === '' || isNaN(amount)) {
+        alert('Lütfen geçerli bir açıklama ve tutar girin.');
+        return;
+    }
+
+    const transactions = document.getElementById('transactions');
+    const transaction = document.createElement('div');
+    transaction.textContent = `${description}: ${amount} TL (${type === 'income' ? 'Gelir' : 'Gider'})`;
+    transactions.appendChild(transaction);
+
+    // Add transaction to the list
+    transactionsList.push({ description, amount, type });
+
+    updateSummary(type, amount);
+
+    // Clear input fields
+    document.getElementById('description').value = '';
+    document.getElementById('amount').value = '';
+});
+
+// Summary variables
+let totalIncome = 0;
+let totalExpense = 0;
+
+function updateSummary(type, amount) {
+    if (type === 'income') {
+        totalIncome += amount;
+    } else {
+        totalExpense += amount;
+    }
+
+    document.getElementById('totalIncome').textContent = totalIncome.toFixed(2);
+    document.getElementById('totalExpense').textContent = totalExpense.toFixed(2);
+    document.getElementById('netTotal').textContent = (totalIncome - totalExpense).toFixed(2);
+}
+
+// Download button functionality
+document.getElementById('downloadButton').addEventListener('click', function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.text('Gelir Gider Takibi', 10, 10);
+    doc.text('Açıklama, Tutar, Tür', 10, 20);
+
+    transactionsList.forEach((transaction, index) => {
+        doc.text(`${transaction.description}, ${transaction.amount} TL, ${transaction.type === 'income' ? 'Gelir' : 'Gider'}`, 10, 30 + (10 * index));
+    });
+
+    doc.text(`\nToplam Gelir: ${totalIncome.toFixed(2)} TL`, 10, 30 + (10 * transactionsList.length));
+    doc.text(`Toplam Gider: ${totalExpense.toFixed(2)} TL`, 10, 30 + (10 * (transactionsList.length + 1)));
+    doc.text(`Net Toplam: ${(totalIncome - totalExpense).toFixed(2)} TL`, 10, 30 + (10 * (transactionsList.length + 2)));
+
+    // PDF dosyasını indirme
+    doc.save('gelir_gider_takibi.pdf');
+});
+
+    </script>
+</body>
+</html>
